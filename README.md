@@ -33,4 +33,4 @@ To train a model across the entire table, run
 python main.py --dataname <NAME_OF_DATASET> --mode train --exp_name <experiment_name>
 ```
 
-Results will be saved in tabdiff/<NAME_OF_YOUR_DATASET>/<experiment_name>/20
+Results will be saved in tabdiff/<NAME_OF_YOUR_DATASET>/<experiment_name>/
