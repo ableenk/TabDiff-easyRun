@@ -12,7 +12,7 @@ pip install torch==2.5.0
 
 ## Dataset preparation
 
-Save your tabular data as csv file. Pick convinient file name.
+Save your tabular data as <NAME_OF_YOUR_DATASET>.csv file. 
 
 **The first row should be the header** indicating the name of each column, and the remaining rows are records. Place you data's csv file in the directory named "dataframe_folder".
 
