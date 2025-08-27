@@ -149,7 +149,7 @@ def main(args):
         else:
             metric_list = [
                 "density", 
-                "mle", 
+                # "mle", 
                 "c2st",
             ]
     metrics = TabMetrics(real_data_path, test_data_path, val_data_path, info, device, metric_list=metric_list)
