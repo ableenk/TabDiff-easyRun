@@ -2,10 +2,12 @@
 
 ## Environment Setup
 
-Create the main environment with [tabdiff.yaml](tabdiff.yaml).
+Create the main environment with [tabdiff.yaml](tabdiff.yaml). Then update pytorch version xd.
 
 ```
 conda env create -f tabdiff.yaml
+conda activate tabdiff
+pip install torch==2.5.0
 ```
 
 ## Dataset preparation
