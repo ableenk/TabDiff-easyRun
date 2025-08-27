@@ -46,8 +46,8 @@ def main(args):
     ## Set experiment name
     exp_name = args.exp_name
     if args.exp_name is None:
-        exp_name = 'non_learnable_schedule' if args.non_learnable_schedule else 'learnable_schedule'
-    exp_name += '_y_only' if args.y_only else ''
+        exp_name = 'unknown_experiment'
+    # exp_name += '_y_only' if args.y_only else ''
     
     ## Load configs
     curr_dir = os.path.dirname(os.path.abspath(__file__))
@@ -209,9 +209,9 @@ def main(args):
         state_dicts = torch.load(y_only_model_path, map_location=device)
         y_only_model.load_state_dict(state_dicts['denoise_fn'])
 
-    if not args.y_only and not args.non_learnable_schedule:
-        raw_config['diffusion_params']['scheduler'] = 'power_mean_per_column'
-        raw_config['diffusion_params']['cat_scheduler'] = 'log_linear_per_column'
+    # if not args.y_only and not args.non_learnable_schedule:
+    #     raw_config['diffusion_params']['scheduler'] = 'power_mean_per_column'
+    #     raw_config['diffusion_params']['cat_scheduler'] = 'log_linear_per_column'
     diffusion = UnifiedCtimeDiffusion(
         num_classes=categories,
         num_numerical_features=d_numerical,
@@ -236,7 +236,7 @@ def main(args):
         project=raw_config['project_name'], 
         name=exp_name,
         config=raw_config,
-        mode='disabled' if args.debug or args.no_wandb else 'online',
+        mode='disabled',
     )
 
     ## Load Trainer

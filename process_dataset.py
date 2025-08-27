@@ -1,3 +1,5 @@
+import os
+import shutil
 import numpy as np
 import pandas as pd
 import os
@@ -15,265 +17,13 @@ TYPE_TRANSFORM ={
 }
 
 INFO_PATH = 'data/Info'
+DATA_PATH = 'data'
 
 parser = argparse.ArgumentParser(description='process dataset')
 
 # General configs
 parser.add_argument('--dataname', type=str, default=None, help='Name of dataset.')
 args = parser.parse_args()
-
-def preprocess_beijing():
-    with open(f'{INFO_PATH}/beijing.json', 'r') as f:
-        info = json.load(f)
-    
-    data_path = info['raw_data_path']
-
-    data_df = pd.read_csv(data_path)
-    columns = data_df.columns
-
-    data_df = data_df[columns[1:]]
-
-
-    df_cleaned = data_df.dropna()
-    df_cleaned.to_csv(info['data_path'], index = False)
-    
-def preprocess_beijing_dcr():
-    with open(f'{INFO_PATH}/beijing_dcr.json', 'r') as f:
-        info = json.load(f)
-    
-    data_path = info['raw_data_path']
-
-    data_df = pd.read_csv(data_path)
-    columns = data_df.columns
-
-    data_df = data_df[columns[1:]]
-
-
-    df_cleaned = data_df.dropna()
-    df_cleaned.to_csv(info['data_path'], index = False)
-
-def preprocess_news(remove_cat=False):
-    name = 'news' if not remove_cat else 'news_nocat'
-    with open(f'{INFO_PATH}/{name}.json', 'r') as f:
-        info = json.load(f)
-
-    data_path = info['raw_data_path']
-    data_df = pd.read_csv(data_path)
-    data_df = data_df.drop('url', axis=1)
-
-    columns = np.array(data_df.columns.tolist())
-
-    cat_columns1 = columns[list(range(12,18))]
-    cat_columns2 = columns[list(range(30,38))]
-    
-    if not remove_cat:
-        cat_col1 = data_df[cat_columns1].astype(int).to_numpy().argmax(axis = 1)
-        cat_col2 = data_df[cat_columns2].astype(int).to_numpy().argmax(axis = 1)
-
-    data_df = data_df.drop(cat_columns2, axis=1)
-    data_df = data_df.drop(cat_columns1, axis=1)
-
-    if not remove_cat:
-        data_df['data_channel'] = cat_col1
-        data_df['weekday'] = cat_col2
-    
-    data_save_path = f'data/{name}/{name}.csv'
-    data_df.to_csv(f'{data_save_path}', index = False)
-
-    columns = np.array(data_df.columns.tolist())
-    num_columns = columns[list(range(45))]
-    cat_columns = ['data_channel', 'weekday'] if not remove_cat else []
-    target_columns = columns[[45]]
-
-    info['num_col_idx'] = list(range(45))
-    info['cat_col_idx'] = [46, 47] if not remove_cat else []
-    info['target_col_idx'] = [45]
-    info['data_path'] = data_save_path
-    
-    with open(f'{INFO_PATH}/{name}.json', 'w') as file:
-        json.dump(info, file, indent=4)
-        
-def preprocess_news_dcr(remove_cat=False):
-    name = 'news_dcr' if not remove_cat else 'news_nocat_dcr'
-    with open(f'{INFO_PATH}/{name}.json', 'r') as f:
-        info = json.load(f)
-
-    data_path = info['raw_data_path']
-    data_df = pd.read_csv(data_path)
-    data_df = data_df.drop('url', axis=1)
-
-    columns = np.array(data_df.columns.tolist())
-
-    cat_columns1 = columns[list(range(12,18))]
-    cat_columns2 = columns[list(range(30,38))]
-    
-    if not remove_cat:
-        cat_col1 = data_df[cat_columns1].astype(int).to_numpy().argmax(axis = 1)
-        cat_col2 = data_df[cat_columns2].astype(int).to_numpy().argmax(axis = 1)
-
-    data_df = data_df.drop(cat_columns2, axis=1)
-    data_df = data_df.drop(cat_columns1, axis=1)
-
-    if not remove_cat:
-        data_df['data_channel'] = cat_col1
-        data_df['weekday'] = cat_col2
-    
-    data_save_path = f'data/{name}/{name}.csv'
-    data_df.to_csv(f'{data_save_path}', index = False)
-
-    columns = np.array(data_df.columns.tolist())
-    num_columns = columns[list(range(45))]
-    cat_columns = ['data_channel', 'weekday'] if not remove_cat else []
-    target_columns = columns[[45]]
-
-    info['num_col_idx'] = list(range(45))
-    info['cat_col_idx'] = [46, 47] if not remove_cat else []
-    info['target_col_idx'] = [45]
-    info['data_path'] = data_save_path
-    
-    with open(f'{INFO_PATH}/{name}.json', 'w') as file:
-        json.dump(info, file, indent=4)
-    
-def preprocess_diabetes():
-    """
-    Preprocesses the diabetes dataset is aligned with the concurrent work
-    Continuous Diffusion for Mixed-Type Tabular Data (CDTD):
-    https://github.com/muellermarkus/cdtd
-    """
-    with open(f'{INFO_PATH}/diabetes.json', 'r') as f:
-        info = json.load(f)
-
-    info['num_col_idx'] = list(range(9))
-    info['cat_col_idx'] = list(range(9, 36))
-    info['target_col_idx'] = [36]
-    
-    data_path = info['raw_data_path']
-    df = pd.read_csv(data_path, sep=',')
-    df = df[info['column_names']]
-    df = df.replace(r' ', np.nan)
-    df = df.replace(r'?', np.nan)
-    df = df.replace(r'', np.nan)
-    
-    num_features = [info['column_names'][idx] for idx in info['num_col_idx']]
-    cat_features = [info['column_names'][idx] for idx in info['cat_col_idx']]
-    target = info['column_names'][info['target_col_idx'][0]]
-    df[target] = np.where(df[target] == 'NO', 0, 1)
-    enc = OrdinalEncoder()
-    df['age'] = enc.fit_transform(df['age'].to_numpy().reshape(-1,1))
-    
-    # remove rows with missings in targets
-    idx_target_nan = df[target].isna().to_numpy().nonzero()[0]
-    df.drop(labels = idx_target_nan, axis = 0, inplace = True)
-    
-    # for categorical features, replace missings with 'empty', which will be counted as a new category
-    df[cat_features] = df[cat_features].fillna('empty')
-    
-    # for continuous data, drop missing
-    df.dropna(inplace = True)
-    
-    # ensure correct types
-    X_cat = df[cat_features].to_numpy().astype('str')
-    X_cont = df[num_features].to_numpy().astype('float')
-    y = df[[target]].to_numpy()
-    
-    val_prop, test_prop = 0.2, 0.2
-    prop = val_prop / (1 - test_prop) 
-    
-    stratify = None if info['task_type'] == 'regression' else y
-    X_cat_train, X_cat_test, X_cont_train, X_cont_test, y_train, y_test = \
-        model_selection.train_test_split(X_cat, X_cont, y, test_size = test_prop, 
-                                        stratify = stratify, random_state = 42)
-    if val_prop > 0:
-        stratify = None if info['task_type'] == 'regression' else y_train
-        X_cat_train, X_cat_val, X_cont_train, X_cont_val, y_train, y_val = \
-            model_selection.train_test_split(X_cat_train, X_cont_train, y_train,
-                                            stratify = stratify, test_size = prop, 
-                                            random_state = 42)
-    
-    train_df = pd.DataFrame(np.concatenate([X_cont_train, X_cat_train, y_train], axis = 1), columns = num_features + cat_features + [target])
-    val_df = pd.DataFrame(np.concatenate([X_cont_val, X_cat_val, y_val], axis = 1), columns = num_features + cat_features + [target])
-    test_df = pd.DataFrame(np.concatenate([X_cont_test, X_cat_test, y_test], axis = 1), columns = num_features + cat_features + [target])
-
-    # Save the splited data
-    train_df.to_csv(info['data_path'], index = False)
-    val_df.to_csv(info['val_path'], index = False)
-    test_df.to_csv(info['test_path'], index = False)
-    # Save updated info
-    with open(f'{INFO_PATH}/diabetes.json', 'w') as file:
-        json.dump(info, file, indent=4)
-        
-def preprocess_diabetes_dcr():
-    """
-    Preprocesses the diabetes dataset is aligned with the concurrent work
-    Continuous Diffusion for Mixed-Type Tabular Data (CDTD):
-    https://github.com/muellermarkus/cdtd
-    """
-    with open(f'{INFO_PATH}/diabetes_dcr.json', 'r') as f:
-        info = json.load(f)
-
-    info['num_col_idx'] = list(range(9))
-    info['cat_col_idx'] = list(range(9, 36))
-    info['target_col_idx'] = [36]
-    
-    data_path = info['raw_data_path']
-    df = pd.read_csv(data_path, sep=',')
-    df = df[info['column_names']]
-    df = df.replace(r' ', np.nan)
-    df = df.replace(r'?', np.nan)
-    df = df.replace(r'', np.nan)
-    
-    num_features = [info['column_names'][idx] for idx in info['num_col_idx']]
-    cat_features = [info['column_names'][idx] for idx in info['cat_col_idx']]
-    target = info['column_names'][info['target_col_idx'][0]]
-    df[target] = np.where(df[target] == 'NO', 0, 1)
-    enc = OrdinalEncoder()
-    df['age'] = enc.fit_transform(df['age'].to_numpy().reshape(-1,1))
-    
-    # remove rows with missings in targets
-    idx_target_nan = df[target].isna().to_numpy().nonzero()[0]
-    df.drop(labels = idx_target_nan, axis = 0, inplace = True)
-    
-    # for categorical features, replace missings with 'empty', which will be counted as a new category
-    df[cat_features] = df[cat_features].fillna('empty')
-    
-    # for continuous data, drop missing
-    df.dropna(inplace = True)
-    
-    # ensure correct types
-    X_cat = df[cat_features].to_numpy().astype('str')
-    X_cont = df[num_features].to_numpy().astype('float')
-    y = df[[target]].to_numpy()
-    
-    val_prop, test_prop = 0.0, 0.5      # 50-50 split for dcr eval
-    prop = val_prop / (1 - test_prop) 
-    
-    stratify = None if info['task_type'] == 'regression' else y
-    X_cat_train, X_cat_test, X_cont_train, X_cont_test, y_train, y_test = \
-        model_selection.train_test_split(X_cat, X_cont, y, test_size = test_prop, 
-                                        stratify = stratify, random_state = 42)
-    if val_prop > 0:
-        stratify = None if info['task_type'] == 'regression' else y_train
-        X_cat_train, X_cat_val, X_cont_train, X_cont_val, y_train, y_val = \
-            model_selection.train_test_split(X_cat_train, X_cont_train, y_train,
-                                            stratify = stratify, test_size = prop, 
-                                            random_state = 42)
-    
-    train_df = pd.DataFrame(np.concatenate([X_cont_train, X_cat_train, y_train], axis = 1), columns = num_features + cat_features + [target])
-    if val_prop > 0:
-        val_df = pd.DataFrame(np.concatenate([X_cont_val, X_cat_val, y_val], axis = 1), columns = num_features + cat_features + [target])
-    else:
-        val_df = pd.DataFrame(columns = num_features + cat_features + [target]).astype(train_df.dtypes)
-    test_df = pd.DataFrame(np.concatenate([X_cont_test, X_cat_test, y_test], axis = 1), columns = num_features + cat_features + [target])
-
-    # Save the splited data
-    train_df.to_csv(info['data_path'], index = False)
-    val_df.to_csv(info['val_path'], index = False)
-    test_df.to_csv(info['test_path'], index = False)
-    # Save updated info
-    with open(f'{INFO_PATH}/diabetes_dcr.json', 'w') as file:
-        json.dump(info, file, indent=4)
-    
-
 
 def get_column_name_mapping(data_df, num_col_idx, cat_col_idx, target_col_idx, column_names = None):
     
@@ -346,92 +96,54 @@ def train_val_test_split(data_df, cat_columns, num_train = 0, num_test = 0):
     return train_df, test_df, seed    
 
 
+
 def process_data(name):
+    info = {
+    "task_type": "binclass",
+    "header": "infer",
+    "file_type": "csv",
+    "test_path": None,
+    "val_path": None
+}
+    info['name'] = name
 
-    if name == 'news':
-        preprocess_news()
-    elif name == 'news_nocat':
-        preprocess_news(remove_cat=True)
-    elif name == 'news_dcr':
-        preprocess_news_dcr()
-    elif name == 'beijing':
-        preprocess_beijing()
-    elif name == 'beijing_dcr':
-        preprocess_beijing_dcr()
-    elif name == 'diabetes':
-        preprocess_diabetes()
-    elif name == 'diabetes_dcr':
-        preprocess_diabetes_dcr()
+    move_csv_file(name)    
 
-    with open(f'{INFO_PATH}/{name}.json', 'r') as f:
-        info = json.load(f)
+    data_path = f'{DATA_PATH}/{name}/{name}.csv'
+    info[data_path] = data_path
 
-    data_path = info['data_path']
-    if info['file_type'] == 'csv':
-        data_df = pd.read_csv(data_path, header = info['header'])
+    data_df = pd.read_csv(data_path)
+    data_df['target'] = 1.0
 
-    elif info['file_type'] == 'xls':
-        data_df = pd.read_excel(data_path, sheet_name='Data', header=1)
-        data_df = data_df.drop('ID', axis=1)
+    data_df = data_df.astype(np.float32)
 
     num_data = data_df.shape[0]
 
-    column_names = info['column_names'] if info['column_names'] else data_df.columns.tolist()
- 
-    num_col_idx = info['num_col_idx']
-    cat_col_idx = info['cat_col_idx']
-    target_col_idx = info['target_col_idx']
+    column_names = data_df.columns.tolist()
+    
+    info['column_names'] = column_names
+
+    num_col_idx = [x for x in range(len(column_names)-1)]
+    cat_col_idx = []
+    target_col_idx = [len(column_names)-1]
+
+    info['num_col_idx'] = num_col_idx
+    info['cat_col_idx'] = cat_col_idx
+    info['target_col_idx'] = target_col_idx
 
     num_columns = [column_names[i] for i in num_col_idx]
     cat_columns = [column_names[i] for i in cat_col_idx]
-    target_columns = [column_names[i] for i in target_col_idx]
+    target_columns = ['target']
     
     idx_mapping, inverse_idx_mapping, idx_name_mapping = get_column_name_mapping(data_df, num_col_idx, cat_col_idx, target_col_idx, column_names)
 
-    has_val = bool(info['val_path'])
+    has_val = False
     val_df = pd.DataFrame(columns=data_df.columns).astype(data_df.dtypes)   # by default (val_path is not provided), set val_Df to be empty
-    if info['test_path']:
 
-        # if testing data is given
-        test_path = info['test_path']
-        
-        if "adult" in name:     # BUG: currently data saved at adult's test_path cannot be directly loaded. Consider integrate the following code to a preprocesing function for adult
-            with open(test_path, 'r') as f:
-                lines = f.readlines()[1:]
-                test_save_path = f'data/{name}/test.data'
-                if not os.path.exists(test_save_path):
-                    with open(test_save_path, 'a') as f1:     
-                        for line in lines:
-                            save_line = line.strip('\n').strip('.')
-                            f1.write(f'{save_line}\n')
+    num_train = int(num_data*0.9)
+    num_test = num_data - num_train
 
-            test_df = pd.read_csv(test_save_path, header = None)
-        else:
-            test_df = pd.read_csv(test_path, header = info['header'])
-            
-        if has_val:     # currently you cannot have a val path without a test path
-            val_path = info['val_path']
-            val_df = pd.read_csv(val_path, header = info['header'])
-            
-        train_df = data_df
-        
-        if "dcr" in name and "diabetes" not in name:   # create 50/50 splits for dcr datasets; no need for this for diabetes dataset as it's done in preprocessing
-            complete_df = pd.concat([train_df, test_df, val_df], axis = 0, ignore_index=True)
-            num_data = complete_df.shape[0]
-            num_train = int(num_data*0.5)
-            num_test = num_data - num_train
-            complete_df.rename(columns = idx_name_mapping, inplace=True)
-            train_df, test_df, seed = train_val_test_split(complete_df, cat_columns, num_train, num_test)
-
-    else:  
-        # Train/ Test Split, 90% Training (50% for dcr eval exclusively), 10% Testing (Validation set will be selected from Training set)
-        if "dcr" in name:
-            num_train = int(num_data*0.5)
-        else:
-            num_train = int(num_data*0.9)
-        num_test = num_data - num_train
-
-        train_df, test_df, seed = train_val_test_split(data_df, cat_columns, num_train, num_test)
+    train_df, test_df, seed = train_val_test_split(data_df, cat_columns, num_train, num_test)
     
     complete_df = pd.concat([train_df, test_df, val_df], axis = 0)
     name_idx_mapping = {val: key for key, val in idx_name_mapping.items()}
@@ -470,15 +182,9 @@ def process_data(name):
         col_info['categorizes'] = list(set(train_df[col_idx]))    
 
     for col_idx in target_col_idx:
-        if info['task_type'] == 'regression':
-            col_info[col_idx] = {}
-            col_info['type'] = 'numerical'
-            col_info['max'] = float(train_df[col_idx].max())
-            col_info['min'] = float(train_df[col_idx].min())
-        else:
-            col_info[col_idx] = {}
-            col_info['type'] = 'categorical'
-            col_info['categorizes'] = list(set(train_df[col_idx]))      
+        col_info[col_idx] = {}
+        col_info['type'] = 'categorical'
+        col_info['categorizes'] = list(set(train_df[col_idx]))      
 
     info['column_info'] = col_info
 
@@ -514,7 +220,6 @@ def process_data(name):
     if train_df.isna().any().any():
         print("Training data contains nan in the numerical cols")
         import pdb; pdb.set_trace()
-
 
     
     X_num_train = train_df[num_columns].to_numpy().astype(np.float32)
@@ -626,21 +331,24 @@ def process_data(name):
     print('Cat', cat)
 
 
+
+def move_csv_file(name):
+    source_path = f"dataframe_folder/{name}.csv"
+    destination_dir = f"data/{name}"
+    destination_path = f"{destination_dir}/{name}.csv"
+
+    if not os.path.isfile(source_path):
+        raise FileNotFoundError(f"В папке dataframe_folder нет файла {name}.csv")
+    
+    os.makedirs(destination_dir, exist_ok=True)
+    
+    shutil.move(source_path, destination_path)
+
+    
+
 if __name__ == "__main__":
 
     if args.dataname:
         process_data(args.dataname)
-    else:
-        for name in [
-                'adult', 'default', 'shoppers', 'magic', 'beijing', 'news', 'news_nocat', 'diabetes',
-                'adult_dcr',
-                'default_dcr',
-                'shoppers_dcr',
-                'beijing_dcr',
-                'news_dcr', 
-                'diabetes_dcr'
-            ]:    
-            process_data(name)
-
         
 
