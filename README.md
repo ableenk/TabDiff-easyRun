@@ -19,9 +19,11 @@ Run the following command to process your dataset:
 python process_dataset.py --dataname <NAME_OF_YOUR_DATASET>
 ```
 
-## Training TabDiff
+## Training TabDiff and sampling
 
 Config path: tabdiff/configs/tabdiff_configs.toml
+
+model will generate a sample every ***check_eval_every*** epochs
 
 To train a model across the entire table, run
 
