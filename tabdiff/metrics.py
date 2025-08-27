@@ -282,10 +282,10 @@ def reorder(real_data, syn_data, info):
     new_real_data.columns = range(len(new_real_data.columns))
 
     syn_num_data = syn_data[num_col_idx]
-    syn_cat_data = syn_data[cat_col_idx]
+    # syn_cat_data = syn_data[cat_col_idx]
     
-    new_syn_data = pd.concat([syn_num_data, syn_cat_data], axis=1)
-    new_syn_data.columns = range(len(new_syn_data.columns))
+    new_syn_data = syn_num_data
+    new_syn_data.columns = range(len(syn_num_data.columns))
 
     
     metadata = info['metadata']

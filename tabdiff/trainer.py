@@ -273,17 +273,17 @@ class Trainer:
                 torch.save(state_dicts, os.path.join(self.model_save_path, f'model_{epoch+1}.pt'))
                 
                 print_with_bar(f"Routine Generation Evaluation every {self.check_val_every}, currently at epoch #{epoch+1}, wiht total_loss={total_loss}.")
-                out_metrics, _, _ = self.evaluate_generation(save_metric_details=True, plot_density=False)
-                log_dict.update(out_metrics)
-                print(f"Eval Resutls of the Non-EMA model:\n {out_metrics}")
+                self.evaluate_generation(save_metric_details=False, plot_density=False)
+                # log_dict.update(out_metrics)
+                # print(f"Eval Resutls of the Non-EMA model:\n {out_metrics}")
 
-                # Evaluate the EMA model
-                torch.save(self.ema_model.state_dict(), os.path.join(self.model_save_path, f'ema_model_{epoch+1}.pt'))
-                ema_out_metrics, _, _ = self.evaluate_generation(ema=True, save_metric_details=True, plot_density=False)
-                log_dict.update({
-                    "ema": ema_out_metrics,
-                })
-                print(f"Eval Resutls of the EMA model:\n {ema_out_metrics}")
+                # # Evaluate the EMA model
+                # torch.save(self.ema_model.state_dict(), os.path.join(self.model_save_path, f'ema_model_{epoch+1}.pt'))
+                # ema_out_metrics, _, _ = self.evaluate_generation(ema=True, save_metric_details=True, plot_density=False)
+                # log_dict.update({
+                #     "ema": ema_out_metrics,
+                # })
+                # print(f"Eval Resutls of the EMA model:\n {ema_out_metrics}")
             
             # Submit logs
             self.logger.log(log_dict)
@@ -410,38 +410,38 @@ class Trainer:
         if not os.path.exists(save_path):
             os.makedirs(save_path)
         path = os.path.join(save_path, "samples.csv")
-        syn_df.to_csv(path, index=False)
+        syn_df[syn_df.columns[:-1]].to_csv(path, index=False)
         print(
             f"Samples are saved at {path}"
         )
         
-        # Compute evaluation metrics on the sample
-        syn_df_loaded = pd.read_csv(os.path.join(save_path, "samples.csv")) # In the original tabsyn code, syn_data is implicitly casted into float.64 when it gets loaded with pd.read_csv in the evaluation script. If we don't cast, the density evluation for some columns (especially those with tailed and peaked distribution) will collapse.
-        out_metrics, extras = self.metrics.evaluate(syn_df_loaded)
+        # # Compute evaluation metrics on the sample
+        # syn_df_loaded = pd.read_csv(os.path.join(save_path, "samples.csv")) # In the original tabsyn code, syn_data is implicitly casted into float.64 when it gets loaded with pd.read_csv in the evaluation script. If we don't cast, the density evluation for some columns (especially those with tailed and peaked distribution) will collapse.
+        # out_metrics, extras = self.metrics.evaluate(syn_df_loaded)
         
-        # Save metrics and metric details
-        path = os.path.join(save_path, "all_results.json")
-        with open(path, "w") as json_file:
-            json.dump(out_metrics, json_file, indent=4, separators=(", ", ": "))        # always locally save the output metrics
-        if save_metric_details:
-            for name, extra in extras.items():
-                if isinstance(extra, pd.DataFrame):
-                    extra.to_csv(os.path.join(save_path, f"{name}.csv"))
-                elif isinstance(extra, dict):
-                    with open(os.path.join(save_path, f"{name}.json"), "w") as json_file:
-                        json.dump(extra, json_file, indent=4, separators=(", ", ": "))
-                else:
-                    raise NotImplementedError(f"Extra file generated during evaluations has type {type(extra)}, and code to save this type of file is not implemented")
+        # # Save metrics and metric details
+        # path = os.path.join(save_path, "all_results.json")
+        # with open(path, "w") as json_file:
+        #     json.dump(out_metrics, json_file, indent=4, separators=(", ", ": "))        # always locally save the output metrics
+        # if save_metric_details:
+        #     for name, extra in extras.items():
+        #         if isinstance(extra, pd.DataFrame):
+        #             extra.to_csv(os.path.join(save_path, f"{name}.csv"))
+        #         elif isinstance(extra, dict):
+        #             with open(os.path.join(save_path, f"{name}.json"), "w") as json_file:
+        #                 json.dump(extra, json_file, indent=4, separators=(", ", ": "))
+        #         else:
+        #             raise NotImplementedError(f"Extra file generated during evaluations has type {type(extra)}, and code to save this type of file is not implemented")
         
-        # Plot density figures
-        if plot_density:
-            img = self.metrics.plot_density(syn_df_loaded)
-            path = os.path.join(save_path, "density_plots.png")
-            img.save(path)
-            print(
-                f"The density plots are saved at {path}"
-            )
-        return out_metrics, extras, syn_df
+        # # Plot density figures
+        # if plot_density:
+        #     img = self.metrics.plot_density(syn_df_loaded)
+        #     path = os.path.join(save_path, "density_plots.png")
+        #     img.save(path)
+        #     print(
+        #         f"The density plots are saved at {path}"
+        #     )
+        # return out_metrics, extras, syn_df
         
 
     def sample_synthetic(self, num_samples, keep_nan_samples=True, ema=False):
