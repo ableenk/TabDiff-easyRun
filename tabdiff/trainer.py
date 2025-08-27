@@ -273,13 +273,13 @@ class Trainer:
                 torch.save(state_dicts, os.path.join(self.model_save_path, f'model_{epoch+1}.pt'))
                 
                 print_with_bar(f"Routine Generation Evaluation every {self.check_val_every}, currently at epoch #{epoch+1}, wiht total_loss={total_loss}.")
-                out_metrics, _, _ = self.evaluate_generation(save_metric_details=True, plot_density=True)
+                out_metrics, _, _ = self.evaluate_generation(save_metric_details=True, plot_density=False)
                 log_dict.update(out_metrics)
                 print(f"Eval Resutls of the Non-EMA model:\n {out_metrics}")
 
                 # Evaluate the EMA model
                 torch.save(self.ema_model.state_dict(), os.path.join(self.model_save_path, f'ema_model_{epoch+1}.pt'))
-                ema_out_metrics, _, _ = self.evaluate_generation(ema=True, save_metric_details=True, plot_density=True)
+                ema_out_metrics, _, _ = self.evaluate_generation(ema=True, save_metric_details=True, plot_density=False)
                 log_dict.update({
                     "ema": ema_out_metrics,
                 })
@@ -393,7 +393,7 @@ class Trainer:
         print_with_bar(f"The AVG over {num_runs} runs are: \n{avg_std}")
         
     def test(self):    
-        out_metrics, _, _ = self.evaluate_generation(save_metric_details=True, plot_density=True)
+        out_metrics, _, _ = self.evaluate_generation(save_metric_details=True, plot_density=False)
         print_with_bar(f"Results of the test are: \n{out_metrics}")
         self.logger.log(out_metrics)
         print(out_metrics)

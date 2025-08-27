@@ -333,12 +333,12 @@ def process_data(name):
 
 
 def move_csv_file(name):
-    source_path = f"dataframe_folder/{name}.csv"
+    source_path = f"datacsv/{name}.csv"
     destination_dir = f"data/{name}"
     destination_path = f"{destination_dir}/{name}.csv"
 
     if not os.path.isfile(source_path):
-        raise FileNotFoundError(f"В папке dataframe_folder нет файла {name}.csv")
+        raise FileNotFoundError(f"В папке datacsv нет файла {name}.csv")
     
     os.makedirs(destination_dir, exist_ok=True)
     

@@ -42,12 +42,12 @@ k_init=-6.0
 k_offset=1.0
 
 [train.main]
-steps = 60
+steps = 1000
 lr = 0.001
 weight_decay = 0
 ema_decay = 0.997
 batch_size = 4096
-check_val_every = 20
+check_val_every = 200
 lr_scheduler = "reduce_lr_on_plateau"
 factor = 0.90           # hyperparam for reduce_lr_on_plateau
 reduce_lr_patience = 50        # hyperparam for reduce_lr_on_plateau
